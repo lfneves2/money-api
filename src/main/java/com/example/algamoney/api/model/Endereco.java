@@ -5,26 +5,26 @@ import javax.validation.constraints.Size;
 
 @Embeddable
 public class Endereco {
-	
-	@Size(min=0, max=30)
+
+	@Size(min = 0, max = 30)
 	private String logradouro;
-	
-	@Size(min=0, max=5)
+
+	@Size(min = 0, max = 5)
 	private String numero;
-	
-	@Size(min=0, max=30)
+
+	@Size(min = 0, max = 30)
 	private String complemento;
-	
-	@Size(min=0, max=20)
+
+	@Size(min = 0, max = 20)
 	private String bairro;
-	
-	@Size(min=0, max=10)
+
+	@Size(min = 0, max = 10)
 	private String cep;
-	
-	@Size(min=0, max=20)
+
+	@Size(min = 0, max = 20)
 	private String cidade;
-	
-	@Size(min=0, max=20)
+
+	@Size(min = 0, max = 20)
 	private String estado;
 
 	public String getLogradouro() {
@@ -81,6 +81,12 @@ public class Endereco {
 
 	public void setEstado(String estado) {
 		this.estado = estado;
+	}
+
+	@Override
+	public String toString() {
+		return "Endereco [logradouro=" + logradouro + ", numero=" + numero + ", complemento=" + complemento
+				+ ", bairro=" + bairro + ", cep=" + cep + ", cidade=" + cidade + ", estado=" + estado + "]";
 	}
 
 }

@@ -17,7 +17,7 @@ public class Pessoa {
 	private Long codigo;
 
 	@NotNull
-	@Size(min=3, max=30)
+	@Size(min = 3, max = 30)
 	private String nome;
 
 	@Valid
@@ -82,6 +82,11 @@ public class Pessoa {
 		} else if (!codigo.equals(other.codigo))
 			return false;
 		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "Pessoa [codigo=" + codigo + ", nome=" + nome + ", endereco=" + endereco + ", ativo=" + ativo + "]";
 	}
 
 }
