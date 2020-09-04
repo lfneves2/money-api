@@ -1,5 +1,6 @@
 package com.example.algamoney.api.resource;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -8,8 +9,12 @@ import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,12 +23,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.algamoney.api.event.RecursoCriadoEvent;
-import com.example.algamoney.api.model.Categoria;
+import com.example.algamoney.api.exception.CategoriaInexistenteException;
+import com.example.algamoney.api.exception.PessoaInexistenteOuInativaException;
+import com.example.algamoney.api.exceptionhandler.AlgamoneyExceptionHandler.Erro;
 import com.example.algamoney.api.model.Lancamento;
-import com.example.algamoney.api.model.Pessoa;
-import com.example.algamoney.api.repository.CategoriaRepository;
 import com.example.algamoney.api.repository.LancamentoRepository;
-import com.example.algamoney.api.repository.PessoaRepository;
+import com.example.algamoney.api.repository.filter.LancamentoFilter;
+import com.example.algamoney.api.service.LancamentoService;
 
 @RestController
 @RequestMapping("/lancamentos")
@@ -33,17 +39,17 @@ public class LancamentoResource {
 	private LancamentoRepository lancamentoRepository;
 	
 	@Autowired
-	private PessoaRepository pessoaRepository;
+	private LancamentoService lancamentoService;
 	
 	@Autowired
-	private CategoriaRepository categoriaRepository;
+	private MessageSource messageSource;
 	
 	@Autowired
 	private ApplicationEventPublisher publisher;
 	
 	@GetMapping
-	public List<Lancamento> listar() {
-		return lancamentoRepository.findAll();
+	public List<Lancamento> listar(LancamentoFilter lancamentoFilter) {
+		return lancamentoRepository.filtrar(lancamentoFilter);
 	}
 	
 	@GetMapping("/{codigo}")
@@ -54,12 +60,32 @@ public class LancamentoResource {
 	
 	@PostMapping	
 	public ResponseEntity<?> criar(@Valid @RequestBody Lancamento lancamento, HttpServletResponse response) {
-		Lancamento lacamentoSalvo = lancamentoRepository.save(lancamento);
-		Optional<Pessoa> pessoa = pessoaRepository.findById(lancamento.getPessoa().getCodigo());
-		Optional<Categoria> categoria = categoriaRepository.findById(lancamento.getCategoria().getCodigo());
-		lacamentoSalvo.setPessoa(pessoa.get());
-		lacamentoSalvo.setCategoria(categoria.get());
+		Lancamento lacamentoSalvo = lancamentoService.salvar(lancamento);
 		publisher.publishEvent(new RecursoCriadoEvent(this, response, lacamentoSalvo.getCodigo()));
 		return ResponseEntity.status(HttpStatus.CREATED).body(lacamentoSalvo);
+	}
+	
+	@DeleteMapping("/{codigo}")
+	public void criar(@PathVariable Long codigo){
+		lancamentoRepository.deleteById(codigo);
+	}
+	
+	@ExceptionHandler({ PessoaInexistenteOuInativaException.class })
+	public ResponseEntity<?> handlePessoaInexistenteOuInativaException(PessoaInexistenteOuInativaException ex) {
+		List<Erro> erros = montaMensagemDeErro(ex, "pessoa.inexistente.ou.inativa");		
+		return ResponseEntity.badRequest().body(erros);
+	}
+	
+	@ExceptionHandler({ CategoriaInexistenteException.class })
+	public ResponseEntity<?> handleCategoriaInexistente(CategoriaInexistenteException ex) {
+		List<Erro> erros = montaMensagemDeErro(ex, "categoria.Inexistente");
+		return ResponseEntity.badRequest().body(erros);
+	}
+
+	private List<Erro> montaMensagemDeErro(Exception ex, String mensagem) {
+		String mensagemUsuario = messageSource.getMessage(mensagem, null, LocaleContextHolder.getLocale());
+		String mensagemDesenvolvedor = ex.toString();
+		List<Erro> erros = Arrays.asList(new Erro(mensagemUsuario, mensagemDesenvolvedor));
+		return erros;
 	}
 }
