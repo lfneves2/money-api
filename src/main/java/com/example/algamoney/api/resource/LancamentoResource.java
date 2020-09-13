@@ -17,6 +17,7 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.web.SortDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -57,12 +58,14 @@ public class LancamentoResource {
 	}
 	
 	@GetMapping("/{codigo}")
+	@PreAuthorize("hasAuthority('ROLE_PESQUISAR_LANCAMENTO') and #oauth.hasScope('read')")
 	public ResponseEntity<?> buscarPorCodigo(@PathVariable Long codigo){
 		Optional<Lancamento> lancamento = lancamentoRepository.findById(codigo);
 		return (lancamento.isPresent()) ? ResponseEntity.ok(lancamento) : ResponseEntity.notFound().build();
 	}
 	
 	@PostMapping	
+	@PreAuthorize("hasAuthority('ROLE_CADASTRAR_LANCAMENTO') and #oauth.hasScope('write')")
 	public ResponseEntity<?> criar(@Valid @RequestBody Lancamento lancamento, HttpServletResponse response) {
 		Lancamento lacamentoSalvo = lancamentoService.salvar(lancamento);
 		publisher.publishEvent(new RecursoCriadoEvent(this, response, lacamentoSalvo.getCodigo()));
@@ -70,7 +73,8 @@ public class LancamentoResource {
 	}
 	
 	@DeleteMapping("/{codigo}")
-	public void criar(@PathVariable Long codigo){
+	@PreAuthorize("hasAuthority('ROLE_DELETAR_LANCAMENTO') and #oauth.hasScope('write')")
+	public void deletar(@PathVariable Long codigo){
 		lancamentoRepository.deleteById(codigo);
 	}
 	
